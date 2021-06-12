@@ -52,6 +52,12 @@ int main(int argc, char const *argv[]) {
     ::matrix_B = ::initialize_matrix();
     ::matrix_C = ::initialize_matrix_to_zero();
 
+    // std::cout << "The created Matrices are: \n" << std::endl;
+    // ::print_matrix(::matrix_A);
+    // std::cout << std::endl;
+    // ::print_matrix(::matrix_B);
+    // std::cout << std::endl;
+
     /* Getting the number of platforms */
     cl_uint platform_count = 0;
     cl_int ret = clGetPlatformIDs(1, NULL, &platform_count);
@@ -187,7 +193,7 @@ int main(int argc, char const *argv[]) {
 
     /* setting the local_work_group(work items) and the global_work_group(work group) */
     size_t globalws[2] = {(size_t)::matrix_dimension, (size_t)::matrix_dimension};
-    size_t localws[2] = {16, 16}; /* if you use FPGA it should have low number of work items */
+    size_t localws[2] = {2, 2}; /* if you use FPGA it should have low number of work items */
  
     // the next section is about dividing the compilation into its basic.
     // kernel functions (simple_addition & simple_multiply) and execute them due to the task.
@@ -207,13 +213,13 @@ int main(int argc, char const *argv[]) {
 
     /* Initiatiating the kernel function execution */
     // it will make bufferB = bufferA + bufferB
-    // auto start_time_add = std::chrono::high_resolution_clock::now();
+    auto start_time_add = std::chrono::high_resolution_clock::now();
     ret = clEnqueueNDRangeKernel(command_queue, addition_kernel_func, 2, NULL, globalws, localws, 0, NULL, NULL);
     if(ret != CL_SUCCESS) {
         std::cerr << "The kernel execution failed, check the number of work items and work group!" << std::endl;
         exit(-1);
     }
-    // auto finish_time_add = std::chrono::high_resolution_clock::now();
+    auto finish_time_add = std::chrono::high_resolution_clock::now();
 
     /* create the kernel program pointing to a specific kernel function in the .cl file */
     cl_kernel multiplication_kernel_func = clCreateKernel(program, "simple_multiply", &ret);
@@ -249,7 +255,10 @@ int main(int argc, char const *argv[]) {
     // std::cout << std::endl;
 
     std::cout << "For matrices of size: " << ::matrix_dimension 
-            << " the execution time is " << std::chrono::duration_cast<std::chrono::microseconds>(finish_time - start_time).count() << " microseconds" << std::endl;
+            << " the execution time is " 
+            << std::chrono::duration_cast<std::chrono::microseconds>(finish_time - start_time).count() +
+               std::chrono::duration_cast<std::chrono::microseconds>(finish_time_add - start_time_add).count()
+            << " microseconds\n" << std::endl;
 
     /* free the allocated resources */
     free(platforms_id);
